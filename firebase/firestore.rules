@@ -1,0 +1,58 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)); }
+    function myRole() {
+      return isSignedIn() ? userDoc(request.auth.uid).data.role : null;
+    }
+    function isAdmin() { return myRole() == 'admin'; }
+    function isSurveyor() { return myRole() == 'surveyor'; }
+    function isReviewer() { return myRole() == 'reviewer'; }
+
+    // Users
+    match /users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
+      // User can update their own name only (role changes reserved for admin)
+      allow create: if isSignedIn() && request.auth.uid == uid;
+      allow update: if isSignedIn() && (
+        (request.auth.uid == uid &&
+          request.resource.data.role == resource.data.role &&
+          request.resource.data.isActive == resource.data.isActive
+        )
+        || isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Surveys (admin manages)
+    match /surveys/{surveyId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+
+      // Questions subcollection
+      match /questions/{questionId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Responses
+    match /responses/{responseId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.enteredByUid == request.auth.uid);
+
+      // Create: surveyor/admin can create, but MUST include GPS location
+      allow create: if isSignedIn()
+        && (isSurveyor() || isAdmin())
+        && request.resource.data.enteredByUid == request.auth.uid
+        && request.resource.data.surveyId is string
+        && request.resource.data.answers is map
+        && request.resource.data.location is map
+        && request.resource.data.location.lat is number
+        && request.resource.data.location.lng is number;
+
+      // Optional: allow admin to delete, and admin to update (review flags)
+      allow update, delete: if isAdmin();
+    }
+  }
+}
