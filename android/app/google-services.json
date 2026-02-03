@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "811028797099",
+    "project_id": "harmony-project-42f2a",
+    "storage_bucket": "harmony-project-42f2a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:811028797099:android:484d23645939d25fe109ee",
+        "android_client_info": {
+          "package_name": "com.example.field_survey_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAuqTUvKGUUmXCOJMWpCjsYdibS6w2W2Y4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
