@@ -15,6 +15,11 @@ class AuthRepository {
     await _ensureProfile(cred.user);
   }
 
+  /// Alias for signUp() to match UI call sites.
+  Future<void> register({required String name, required String email, required String password}) async {
+    return signUp(name: name, email: email, password: password);
+  }
+
   Future<void> signUp({required String name, required String email, required String password}) async {
     final cred = await _auth.createUserWithEmailAndPassword(email: email, password: password);
     await _db.collection('users').doc(cred.user!.uid).set({
