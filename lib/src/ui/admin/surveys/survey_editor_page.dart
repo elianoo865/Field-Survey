@@ -4,6 +4,7 @@ import '../../../data/models.dart';
 import '../../../state/providers.dart';
 import '../../shared/loading_error.dart';
 import 'question_editor_dialog.dart';
+import '../../../utils/formatters.dart';
 
 class SurveyEditorPage extends ConsumerStatefulWidget {
   final String surveyId;
@@ -84,9 +85,11 @@ class _SurveyEditorPageState extends ConsumerState<SurveyEditorPage> {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            Chip(label: Text('الحالة: ${surveyStatusToString(survey.status)}')),
+                            Chip(label: Text('الحالة: ${surveyStatusLabelAr(survey.status)}')),
                             const SizedBox(width: 8),
                             const Chip(label: Text('GPS إلزامي دائماً')),
+                            const SizedBox(width: 8),
+                            Chip(label: Text('آخر تحديث: ${Formatters.ts(survey.updatedAt)}')),
                             const Spacer(),
                             FilledButton.tonalIcon(
                               onPressed: () async {
@@ -148,7 +151,7 @@ class _SurveyEditorPageState extends ConsumerState<SurveyEditorPage> {
                               child: ListTile(
                                 title: Text(q.label.isEmpty ? '(بدون نص)' : q.label),
                                 subtitle: Text(
-                                  'نوع: ${questionTypeToString(q.type)} • required: ${q.required ? "yes" : "no"} • order: ${q.order}${q.isDeleted ? " • (محذوف)" : ""}',
+                                  'النوع: ${questionTypeLabelAr(q.type)} • مطلوب: ${Formatters.boolAr(q.required)} • ترتيب: ${q.order}${q.isDeleted ? " • (محذوف)" : ""}',
                                 ),
                                 trailing: Wrap(
                                   spacing: 6,

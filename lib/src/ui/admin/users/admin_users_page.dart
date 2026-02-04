@@ -25,7 +25,7 @@ class AdminUsersPage extends ConsumerWidget {
             return Card(
               child: ListTile(
                 title: Text(u.name.isEmpty ? u.uid : u.name),
-                subtitle: Text('role: ${roleToString(u.role)} • active: ${u.isActive}'),
+                subtitle: Text('الدور: ${roleLabelAr(u.role)} • مفعل: ${u.isActive ? "نعم" : "لا"}'),
                 trailing: Wrap(
                   spacing: 8,
                   children: [
@@ -36,9 +36,9 @@ class AdminUsersPage extends ConsumerWidget {
                         await ref.read(userRepositoryProvider).setRole(uid: u.uid, role: v);
                       },
                       items: const [
-                        DropdownMenuItem(value: UserRole.surveyor, child: Text('surveyor')),
-                        DropdownMenuItem(value: UserRole.reviewer, child: Text('reviewer')),
-                        DropdownMenuItem(value: UserRole.admin, child: Text('admin')),
+                        DropdownMenuItem(value: UserRole.surveyor, child: Text('مُدخل بيانات')),
+                        DropdownMenuItem(value: UserRole.reviewer, child: Text('مراجع')),
+                        DropdownMenuItem(value: UserRole.admin, child: Text('أدمن')),
                       ],
                     ),
                     Switch(

@@ -40,9 +40,15 @@ exports.exportSurveyXlsx = functions.https.onCall(async (data, context) => {
     .map(d => ({ id: d.id, ...d.data() }))
     .filter(q => !q.isDeleted);
 
-  // Fetch responses (you can add date filters later)
-  const rSnap = await db.collection("responses").where("surveyId", "==", surveyId).orderBy("enteredAt", "desc").get();
+  // Fetch responses
+  // NOTE: avoid `where + orderBy` composite index requirements by sorting locally.
+  const rSnap = await db.collection("responses").where("surveyId", "==", surveyId).get();
   const responses = rSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+  responses.sort((a, b) => {
+    const bt = b.enteredAt && b.enteredAt.toDate ? b.enteredAt.toDate().getTime() : 0;
+    const at = a.enteredAt && a.enteredAt.toDate ? a.enteredAt.toDate().getTime() : 0;
+    return bt - at;
+  });
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet("Responses");
@@ -86,24 +92,33 @@ exports.exportSurveyXlsx = functions.https.onCall(async (data, context) => {
 
   const buffer = await workbook.xlsx.writeBuffer();
 
+  // Upload to Firebase Storage and return a public download URL (token-based).
   const token = uuidv4();
   const filePath = `exports/${surveyId}/${Date.now()}_${token}.xlsx`;
   const bucketName = storageBucket();
   const bucket = admin.storage().bucket(bucketName);
 
-  const file = bucket.file(filePath);
-  await file.save(Buffer.from(buffer), {
-    contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    metadata: {
+  try {
+    const file = bucket.file(filePath);
+    await file.save(Buffer.from(buffer), {
+      contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       metadata: {
-        firebaseStorageDownloadTokens: token,
-        surveyTitle: survey.title || "",
+        metadata: {
+          firebaseStorageDownloadTokens: token,
+          surveyTitle: survey.title || "",
+        }
       }
-    }
-  });
+    });
 
-  const encodedPath = encodeURIComponent(filePath);
-  const url = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media&token=${token}`;
-
-  return { url };
+    const encodedPath = encodeURIComponent(filePath);
+    const url = `https://firebasestorage.googleapis.com/v0/b/${bucketName}/o/${encodedPath}?alt=media&token=${token}`;
+    return { url };
+  } catch (err) {
+    // Common misconfig: Firebase Storage is not enabled for the project.
+    const msg = (err && err.message) ? err.message : String(err);
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "تعذر حفظ ملف التصدير على Firebase Storage. تأكد من تفعيل Storage داخل Firebase Console ثم أعد المحاولة.\n\nتفاصيل: " + msg
+    );
+  }
 });

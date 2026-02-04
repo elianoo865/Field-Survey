@@ -15,12 +15,19 @@ class SurveyRepository {
   }
 
   Stream<List<Survey>> watchPublishedSurveys() {
-    return _db
-        .collection('surveys')
-        .where('status', isEqualTo: 'published')
-        .orderBy('updatedAt', descending: true)
-        .snapshots()
-        .map((qs) => qs.docs.map(Survey.fromDoc).toList());
+    // NOTE:
+    // `where + orderBy` requires a composite index.
+    // To keep setup simple for this MVP, we query with `where` only
+    // and sort client-side by `updatedAt`.
+    return _db.collection('surveys').where('status', isEqualTo: 'published').snapshots().map((qs) {
+      final list = qs.docs.map(Survey.fromDoc).toList();
+      list.sort((a, b) {
+        final bt = b.updatedAt?.millisecondsSinceEpoch ?? 0;
+        final at = a.updatedAt?.millisecondsSinceEpoch ?? 0;
+        return bt.compareTo(at);
+      });
+      return list;
+    });
   }
 
   Future<String> createSurvey({required String title, required String description, required String createdBy}) async {

@@ -69,6 +69,22 @@ npm install
 firebase deploy --only functions
 ```
 
+> ملاحظة: زر **تصدير Excel** يحفظ الملف على Firebase Storage ويرجع رابط تحميل.
+> إذا ظهر خطأ من نوع `failed-precondition`، فعّل **Storage** من Firebase Console ثم جرّب.
+
+## 5.1) Firestore Rules + Indexes
+داخل المجلد `firebase/` يوجد:
+- `firestore.rules`
+- `firestore.indexes.json`
+- `firebase.json`
+
+لتطبيق القواعد (Rules) أو بناء الـ Indexes عبر CLI:
+```bash
+cd firebase
+firebase deploy --only firestore:rules
+firebase deploy --only firestore:indexes
+```
+
 ## 6) بنية البيانات (Firestore)
 - `users/{uid}`: `{ name, email, role }`
 - `surveys/{surveyId}`: `{ title, description, published, createdAt, updatedAt }`

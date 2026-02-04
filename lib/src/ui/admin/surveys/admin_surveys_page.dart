@@ -4,6 +4,7 @@ import '../../../data/models.dart';
 import '../../../state/providers.dart';
 import '../../shared/loading_error.dart';
 import 'survey_editor_page.dart';
+import '../../../utils/formatters.dart';
 
 class AdminSurveysPage extends ConsumerWidget {
   const AdminSurveysPage({super.key});
@@ -54,8 +55,32 @@ class AdminSurveysPage extends ConsumerWidget {
                     final s = surveys[i];
                     return Card(
                       child: ListTile(
-                        title: Text(s.title.isEmpty ? '(بدون عنوان)' : s.title),
-                        subtitle: Text('الحالة: ${surveyStatusToString(s.status)}  •  v${s.version}'),
+                        title: Text(
+                          s.title.isEmpty ? '(بدون عنوان)' : s.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (s.description.trim().isNotEmpty)
+                              Text(
+                                s.description,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 6,
+                              children: [
+                                Chip(label: Text('الحالة: ${surveyStatusLabelAr(s.status)}')),
+                                Chip(label: Text('الإصدار: v${s.version}')),
+                                Chip(label: Text('آخر تحديث: ${Formatters.ts(s.updatedAt)}')),
+                              ],
+                            ),
+                          ],
+                        ),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => SurveyEditorPage(surveyId: s.id)),

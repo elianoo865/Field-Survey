@@ -29,6 +29,13 @@ class _AdminResponsesPageState extends ConsumerState<AdminResponsesPage> {
       if (!mounted) return;
       final uri = Uri.parse(url);
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } on FirebaseFunctionsException catch (e) {
+      if (!mounted) return;
+      final msg = (e.message ?? '').trim();
+      final extra = msg.isEmpty ? '' : ('\n' + msg);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل التصدير (${e.code})$extra')),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل التصدير: $e')));
@@ -60,7 +67,15 @@ class _AdminResponsesPageState extends ConsumerState<AdminResponsesPage> {
                   DropdownButton<String>(
                     value: _selectedSurveyId,
                     items: surveys
-                        .map((s) => DropdownMenuItem(value: s.id, child: Text(s.title.isEmpty ? s.id : s.title)))
+                        .map(
+                          (s) => DropdownMenuItem(
+                            value: s.id,
+                            child: SizedBox(
+                              width: 240,
+                              child: Text(s.title.isEmpty ? s.id : s.title, overflow: TextOverflow.ellipsis),
+                            ),
+                          ),
+                        )
                         .toList(),
                     onChanged: (v) => setState(() => _selectedSurveyId = v),
                   ),
@@ -68,7 +83,7 @@ class _AdminResponsesPageState extends ConsumerState<AdminResponsesPage> {
                   FilledButton.icon(
                     onPressed: _exporting ? null : _exportXlsx,
                     icon: const Icon(Icons.download),
-                    label: Text(_exporting ? '...' : 'Export XLSX'),
+                    label: Text(_exporting ? '...' : 'تصدير Excel'),
                   ),
                 ],
               ),

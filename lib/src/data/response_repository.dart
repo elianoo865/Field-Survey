@@ -5,24 +5,31 @@ class ResponseRepository {
   final FirebaseFirestore _db;
   ResponseRepository(this._db);
 
+  int _tsMillis(Map<String, dynamic> d) {
+    final v = d['enteredAt'];
+    if (v is Timestamp) return v.millisecondsSinceEpoch;
+    return 0;
+  }
+
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchMyResponses(String uid) {
-    return _db
-        .collection('responses')
-        .where('enteredByUid', isEqualTo: uid)
-        .orderBy('enteredAt', descending: true)
-        .limit(50)
-        .snapshots()
-        .map((qs) => qs.docs);
+    // NOTE:
+    // Combining `where + orderBy` requires a composite index.
+    // To keep setup simple for this MVP, we query with `where` only
+    // and sort client-side.
+    return _db.collection('responses').where('enteredByUid', isEqualTo: uid).snapshots().map((qs) {
+      final docs = qs.docs.toList();
+      docs.sort((a, b) => _tsMillis(b.data()).compareTo(_tsMillis(a.data())));
+      return docs.take(50).toList();
+    });
   }
 
   Stream<List<QueryDocumentSnapshot<Map<String, dynamic>>>> watchSurveyResponses(String surveyId) {
-    return _db
-        .collection('responses')
-        .where('surveyId', isEqualTo: surveyId)
-        .orderBy('enteredAt', descending: true)
-        .limit(200)
-        .snapshots()
-        .map((qs) => qs.docs);
+    // Same rationale as above: avoid composite indexes by sorting locally.
+    return _db.collection('responses').where('surveyId', isEqualTo: surveyId).snapshots().map((qs) {
+      final docs = qs.docs.toList();
+      docs.sort((a, b) => _tsMillis(b.data()).compareTo(_tsMillis(a.data())));
+      return docs;
+    });
   }
 
   Future<void> submitResponse({

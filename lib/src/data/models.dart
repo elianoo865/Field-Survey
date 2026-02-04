@@ -25,6 +25,17 @@ String roleToString(UserRole r) {
   }
 }
 
+String roleLabelAr(UserRole r) {
+  switch (r) {
+    case UserRole.admin:
+      return 'أدمن';
+    case UserRole.reviewer:
+      return 'مراجع';
+    case UserRole.surveyor:
+      return 'مُدخل بيانات';
+  }
+}
+
 class UserProfile {
   final String uid;
   final String name;
@@ -77,6 +88,17 @@ String surveyStatusToString(SurveyStatus s) {
       return 'archived';
     case SurveyStatus.draft:
       return 'draft';
+  }
+}
+
+String surveyStatusLabelAr(SurveyStatus s) {
+  switch (s) {
+    case SurveyStatus.published:
+      return 'منشور';
+    case SurveyStatus.archived:
+      return 'مؤرشف';
+    case SurveyStatus.draft:
+      return 'مسودة';
   }
 }
 
@@ -155,6 +177,19 @@ String questionTypeToString(QuestionType t) {
       return 'checkbox';
     case QuestionType.text:
       return 'text';
+  }
+}
+
+String questionTypeLabelAr(QuestionType t) {
+  switch (t) {
+    case QuestionType.text:
+      return 'نص';
+    case QuestionType.singleChoice:
+      return 'اختيار واحد';
+    case QuestionType.multiChoice:
+      return 'اختيارات متعددة';
+    case QuestionType.checkbox:
+      return 'صح/خطأ';
   }
 }
 
