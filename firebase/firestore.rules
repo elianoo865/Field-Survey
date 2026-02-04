@@ -1,57 +1,121 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() { return request.auth != null; }
-    function userDoc(uid) { return get(/databases/$(database)/documents/users/$(uid)); }
-    function myRole() {
-      return isSignedIn() ? userDoc(request.auth.uid).data.role : null;
-    }
-    function isAdmin() { return myRole() == 'admin'; }
-    function isSurveyor() { return myRole() == 'surveyor'; }
-    function isReviewer() { return myRole() == 'reviewer'; }
 
-    // Users
+    /* ------------ Helpers ------------ */
+    function signedIn() { return request.auth != null; }
+
+    function userPath(uid) {
+      return /databases/$(database)/documents/users/$(uid);
+    }
+
+    function myUserExists() {
+      return signedIn() && exists(userPath(request.auth.uid));
+    }
+
+    function myUser() {
+      return get(userPath(request.auth.uid)).data;
+    }
+
+    function myRole() {
+      return myUserExists() ? myUser().role : null;
+    }
+
+    function myActive() {
+      return myUserExists() && myUser().isActive == true;
+    }
+
+    function isAdmin() { return myActive() && myRole() == 'admin'; }
+    function isSurveyor() { return myActive() && myRole() == 'surveyor'; }
+    function isReviewer() { return myActive() && myRole() == 'reviewer'; }
+
+    function canUseApp() { return signedIn() && myActive(); }
+
+    function isNumeric(v) { return v is int || v is float; }
+
+    function surveyPath(surveyId) {
+      return /databases/$(database)/documents/surveys/$(surveyId);
+    }
+
+    function surveyExists(surveyId) {
+      return exists(surveyPath(surveyId));
+    }
+
+    function surveyData(surveyId) {
+      return get(surveyPath(surveyId)).data;
+    }
+
+    function isPublishedSurvey(surveyId) {
+      return surveyExists(surveyId) && surveyData(surveyId).status == 'published';
+    }
+
+    function currentSurveyVersion(surveyId) {
+      return surveyExists(surveyId) ? surveyData(surveyId).version : -1;
+    }
+
+    /* ------------ Users ------------ */
     match /users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdmin());
-      // User can update their own name only (role changes reserved for admin)
-      allow create: if isSignedIn() && request.auth.uid == uid;
-      allow update: if isSignedIn() && (
-        (request.auth.uid == uid &&
-          request.resource.data.role == resource.data.role &&
-          request.resource.data.isActive == resource.data.isActive
+      // user reads self, admin reads all
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // profile create only for self; must start as surveyor + active
+      allow create: if signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.role == 'surveyor'
+        && request.resource.data.isActive == true;
+
+      // user can update name only (role/isActive locked)
+      // admin can update role/isActive
+      allow update: if signedIn() && (
+        (
+          request.auth.uid == uid
+          && myActive()
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.isActive == resource.data.isActive
         )
         || isAdmin()
       );
+
       allow delete: if isAdmin();
     }
 
-    // Surveys (admin manages)
+    /* ------------ Surveys ------------ */
     match /surveys/{surveyId} {
-      allow read: if isSignedIn();
+      // admin/reviewer: all, surveyor: published only
+      allow read: if canUseApp() && (isAdmin() || isReviewer() || resource.data.status == 'published');
       allow create, update, delete: if isAdmin();
 
-      // Questions subcollection
       match /questions/{questionId} {
-        allow read: if isSignedIn();
+        // admin/reviewer: all, surveyor: only if parent survey published
+        allow read: if canUseApp() && (isAdmin() || isReviewer() || isPublishedSurvey(surveyId));
         allow create, update, delete: if isAdmin();
       }
     }
 
-    // Responses
+    /* ------------ Responses ------------ */
     match /responses/{responseId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.enteredByUid == request.auth.uid);
+      // admin/reviewer: all, surveyor: only own
+      allow read: if isAdmin() || isReviewer() || (canUseApp() && resource.data.enteredByUid == request.auth.uid);
 
-      // Create: surveyor/admin can create, but MUST include GPS location
-      allow create: if isSignedIn()
+      // Create: surveyor/admin can create, but MUST include GPS + valid survey version.
+      allow create: if canUseApp()
         && (isSurveyor() || isAdmin())
         && request.resource.data.enteredByUid == request.auth.uid
         && request.resource.data.surveyId is string
         && request.resource.data.answers is map
         && request.resource.data.location is map
-        && request.resource.data.location.lat is number
-        && request.resource.data.location.lng is number;
+        && isNumeric(request.resource.data.location.lat)
+        && isNumeric(request.resource.data.location.lng)
+        && request.resource.data.location.lat >= -90
+        && request.resource.data.location.lat <= 90
+        && request.resource.data.location.lng >= -180
+        && request.resource.data.location.lng <= 180
+        && surveyExists(request.resource.data.surveyId)
+        && (isAdmin() || isPublishedSurvey(request.resource.data.surveyId))
+        && request.resource.data.surveyVersion is int
+        && request.resource.data.surveyVersion == currentSurveyVersion(request.resource.data.surveyId);
 
-      // Optional: allow admin to delete, and admin to update (review flags)
+      // lock edits/deletes (results are immutable) except for admin
       allow update, delete: if isAdmin();
     }
   }

@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../firebase_options.dart';
 import 'app.dart';
+import 'state/providers.dart';
 
 class FieldSurveyBootstrap extends ConsumerStatefulWidget {
   const FieldSurveyBootstrap({super.key});
@@ -32,6 +33,9 @@ class _FieldSurveyBootstrapState extends ConsumerState<FieldSurveyBootstrap> {
 
     // Enable offline persistence (mobile + web IndexedDB when supported)
     FirebaseFirestore.instance.settings = const Settings(persistenceEnabled: true);
+
+    // Ensure user profile exists (fixes cached-session role issues)
+    await ref.read(authRepositoryProvider).ensureProfileForCurrentUser();
 
     // Small delay so the splash feels intentional (and avoids a flash on fast devices).
     await Future<void>.delayed(const Duration(milliseconds: 250));

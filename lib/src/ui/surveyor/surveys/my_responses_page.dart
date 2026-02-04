@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../state/providers.dart';
 import '../../shared/loading_error.dart';
+import '../../shared/location_map.dart';
 
 class MyResponsesPage extends ConsumerWidget {
   const MyResponsesPage({super.key});
@@ -27,11 +28,12 @@ class MyResponsesPage extends ConsumerWidget {
           itemBuilder: (context, i) {
             final d = docs[i].data();
             final surveyId = (d['surveyId'] ?? '') as String;
-            final loc = d['location'] as Map?;
+            final loc = parseLocationMap(d['location'] as Map?);
             return Card(
               child: ListTile(
                 title: Text('Survey: $surveyId'),
-                subtitle: Text('GPS: ${loc?['lat']}, ${loc?['lng']}'),
+                subtitle: Text(loc == null ? 'GPS: غير متوفر' : 'GPS: ${loc.formatShort()}'),
+                trailing: loc == null ? null : LocationActions(location: loc, sheetTitle: 'Survey: $surveyId'),
                 onTap: () {
                   showModalBottomSheet(
                     context: context,

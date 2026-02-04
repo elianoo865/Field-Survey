@@ -5,6 +5,7 @@ import '../../../data/models.dart';
 import '../../../state/providers.dart';
 import '../../shared/loading_error.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../shared/location_map.dart';
 
 class AdminResponsesPage extends ConsumerStatefulWidget {
   const AdminResponsesPage({super.key});
@@ -89,14 +90,14 @@ class _AdminResponsesPageState extends ConsumerState<AdminResponsesPage> {
                         itemBuilder: (context, i) {
                           final d = docs[i].data();
                           final name = (d['enteredByName'] ?? '') as String;
-                          final loc = d['location'] as Map?;
-                          final lat = loc?['lat'];
-                          final lng = loc?['lng'];
+                          final loc = parseLocationMap(d['location'] as Map?);
                           return Card(
                             child: ListTile(
                               title: Text(name.isEmpty ? (d['enteredByUid'] ?? '') : name),
-                              subtitle: Text('GPS: $lat, $lng'),
-                              trailing: const Icon(Icons.chevron_right),
+                              subtitle: Text(loc == null ? 'GPS: غير متوفر' : 'GPS: ${loc.formatShort()}'),
+                              trailing: loc == null
+                                  ? const Icon(Icons.chevron_right)
+                                  : LocationActions(location: loc, sheetTitle: name),
                               onTap: () {
                                 showModalBottomSheet(
                                   context: context,

@@ -158,10 +158,10 @@ class _SurveyEditorPageState extends ConsumerState<SurveyEditorPage> {
                                       onPressed: i == 0
                                           ? null
                                           : () async {
-                                              await ref.read(surveyRepositoryProvider).reorderQuestion(
+                                              await ref.read(surveyRepositoryProvider).swapQuestionOrders(
                                                     surveyId: widget.surveyId,
-                                                    questionId: q.id,
-                                                    newOrder: q.order - 1,
+                                                    aQuestionId: q.id,
+                                                    bQuestionId: qs[i - 1].id,
                                                   );
                                             },
                                       icon: const Icon(Icons.arrow_upward),
@@ -171,10 +171,10 @@ class _SurveyEditorPageState extends ConsumerState<SurveyEditorPage> {
                                       onPressed: i == qs.length - 1
                                           ? null
                                           : () async {
-                                              await ref.read(surveyRepositoryProvider).reorderQuestion(
+                                              await ref.read(surveyRepositoryProvider).swapQuestionOrders(
                                                     surveyId: widget.surveyId,
-                                                    questionId: q.id,
-                                                    newOrder: q.order + 1,
+                                                    aQuestionId: q.id,
+                                                    bQuestionId: qs[i + 1].id,
                                                   );
                                             },
                                       icon: const Icon(Icons.arrow_downward),

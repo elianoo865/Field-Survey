@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Network is required for Firebase + map tiles (OpenStreetMap) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Location permissions required by geolocator -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:label="field_survey_app"
         android:name="${applicationName}"

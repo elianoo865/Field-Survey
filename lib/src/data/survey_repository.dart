@@ -78,7 +78,10 @@ class SurveyRepository {
     required bool isDeleted,
   }) async {
     final id = questionId ?? _uuid.v4();
-    await _db.collection('surveys').doc(surveyId).collection('questions').doc(id).set({
+    final ref = _db.collection('surveys').doc(surveyId).collection('questions').doc(id);
+
+    // Important: do NOT overwrite createdAt on edits.
+    final data = <String, dynamic>{
       'label': label,
       'type': questionTypeToString(type),
       'required': required,
@@ -86,8 +89,10 @@ class SurveyRepository {
       'options': options,
       'isDeleted': isDeleted,
       'updatedAt': FieldValue.serverTimestamp(),
-      'createdAt': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+      if (questionId == null) 'createdAt': FieldValue.serverTimestamp(),
+    };
+
+    await ref.set(data, SetOptions(merge: true));
   }
 
   Future<void> softDeleteQuestion({required String surveyId, required String questionId}) async {
@@ -106,5 +111,30 @@ class SurveyRepository {
       'order': newOrder,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  /// Swaps the `order` field between two questions.
+  ///
+  /// Prevents duplicated order values (unstable sorting) when using up/down UI.
+  Future<void> swapQuestionOrders({
+    required String surveyId,
+    required String aQuestionId,
+    required String bQuestionId,
+  }) async {
+    final col = _db.collection('surveys').doc(surveyId).collection('questions');
+    final aRef = col.doc(aQuestionId);
+    final bRef = col.doc(bQuestionId);
+
+    await _db.runTransaction((tx) async {
+      final aSnap = await tx.get(aRef);
+      final bSnap = await tx.get(bRef);
+      if (!aSnap.exists || !bSnap.exists) return;
+
+      final aOrder = (aSnap.data()?['order'] ?? 0) as int;
+      final bOrder = (bSnap.data()?['order'] ?? 0) as int;
+
+      tx.set(aRef, {'order': bOrder, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+      tx.set(bRef, {'order': aOrder, 'updatedAt': FieldValue.serverTimestamp()}, SetOptions(merge: true));
+    });
   }
 }

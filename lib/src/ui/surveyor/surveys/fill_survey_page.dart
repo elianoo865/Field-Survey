@@ -6,6 +6,7 @@ import '../../../data/models.dart';
 import '../../../state/providers.dart';
 import '../../../utils/gps_service.dart';
 import '../../shared/loading_error.dart';
+import '../../shared/location_map.dart';
 
 class FillSurveyPage extends ConsumerStatefulWidget {
   final String surveyId;
@@ -143,6 +144,20 @@ class _FillSurveyPageState extends ConsumerState<FillSurveyPage> {
                                 ),
                               ],
                             ),
+                            if (_gps != null) ...[
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: LocationActions(
+                                  location: LocationLite(
+                                    lat: _gps!.lat,
+                                    lng: _gps!.lng,
+                                    accuracy: _gps!.accuracy,
+                                  ),
+                                  sheetTitle: 'موقع الاستبيان',
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),

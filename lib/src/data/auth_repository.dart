@@ -10,6 +10,14 @@ class AuthRepository {
 
   Stream<User?> authStateChanges() => _auth.authStateChanges();
 
+  /// Ensures the Firestore profile exists for the currently signed-in user.
+  ///
+  /// This solves the common case where a user has a cached session (already
+  /// signed in) but `/users/{uid}` is missing (e.g. from older builds).
+  Future<void> ensureProfileForCurrentUser() async {
+    await _ensureProfile(_auth.currentUser);
+  }
+
   Future<void> signIn({required String email, required String password}) async {
     final cred = await _auth.signInWithEmailAndPassword(email: email, password: password);
     await _ensureProfile(cred.user);

@@ -31,7 +31,10 @@ dependencies:
 
   # Location (GPS)
   geolocator: ^10.1.1
-  permission_handler: ^11.4.0
+
+  # Map preview (OpenStreetMap) + open in Google Maps
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
 
   # Utilities
   uuid: ^4.4.2
