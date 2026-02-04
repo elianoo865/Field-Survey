@@ -20,7 +20,9 @@ class DefaultFirebaseOptions {
 
   // Web App (Firebase Console -> Project settings -> Your apps -> Web app -> Config)
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCjxbcJnbFd_ECDmwmXyz-awu6g9CIG0kK',
+    // IMPORTANT: Must be a valid API key for your Firebase project.
+    // Synced with android/app/google-services.json (current_key).
+    apiKey: 'AIzaSyAuqTUvKGUUmXCOJMWpCjsYdibS6w2W2Y4',
     appId: '1:811028797099:web:11022000f600879ee109ee',
     messagingSenderId: '811028797099',
     projectId: 'harmony-project-42f2a',
@@ -32,7 +34,7 @@ class DefaultFirebaseOptions {
   // Android App (Firebase Console -> Project settings -> Your apps -> Android app)
   // NOTE: for Android builds you still need android/app/google-services.json.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCjxbcJnbFd_ECDmwmXyz-awu6g9CIG0kK',
+    apiKey: 'AIzaSyAuqTUvKGUUmXCOJMWpCjsYdibS6w2W2Y4',
     appId: '1:811028797099:android:484d23645939d25fe109ee',
     messagingSenderId: '811028797099',
     projectId: 'harmony-project-42f2a',
