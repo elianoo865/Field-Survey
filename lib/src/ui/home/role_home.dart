@@ -6,19 +6,50 @@ import '../shared/loading_error.dart';
 import '../admin/admin_home.dart';
 import '../surveyor/surveyor_home.dart';
 
-class RoleHomePage extends ConsumerWidget {
+class RoleHomePage extends ConsumerStatefulWidget {
   const RoleHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RoleHomePage> createState() => _RoleHomePageState();
+}
+
+class _RoleHomePageState extends ConsumerState<RoleHomePage> {
+  bool _didRetry = false;
+
+  bool _isPermissionDenied(Object e) {
+    // FirebaseException code is 'permission-denied' for Firestore rules failures
+    return e.toString().contains('permission-denied') ||
+        e.toString().contains('Missing or insufficient permissions');
+  }
+
+  void _scheduleRetry() {
+    if (_didRetry) return;
+    _didRetry = true;
+    Future<void>.delayed(const Duration(milliseconds: 800), () {
+      if (!mounted) return;
+      ref.invalidate(myProfileProvider);
+      setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final profileAsync = ref.watch(myProfileProvider);
 
     return profileAsync.when(
       loading: () => const LoadingScaffold(),
-      error: (e, _) => ErrorScaffold(message: 'خطأ بجلب بيانات المستخدم: $e'),
+      error: (e, _) {
+        if (_isPermissionDenied(e)) {
+          // Sometimes right after login the auth token isn't fully applied to Firestore yet.
+          // We auto-retry once instead of forcing the user to refresh the page.
+          _scheduleRetry();
+          return const LoadingScaffold(message: 'جارٍ تهيئة الحساب... لحظة');
+        }
+        return ErrorScaffold(message: 'خطأ بجلب بيانات المستخدم: $e');
+      },
       data: (profile) {
         if (profile == null) {
-          return const LoadingScaffold();
+          return const LoadingScaffold(message: 'جارٍ تهيئة الحساب...');
         }
         if (!profile.isActive) {
           return const ErrorScaffold(message: 'هذا الحساب غير مفعل. راجع الأدمن.');
